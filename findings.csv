@@ -1,0 +1,4 @@
+ID,Tipo,Herramienta,CWE/CVE,Severidad,Componente,Estado
+1,Hardcoded Secret,Bandit,CWE-798,Alta,main.py (SECRET_KEY),Abierto
+2,SQL Injection,Bandit,CWE-89,Crítica,main.py (/register y /login),Abierto
+3,Dependencia Vulnerable,Safety,CVE-2024-XXXX,Alta,requirements.txt (PyJWT 1.7.1),Abierto

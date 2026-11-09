@@ -1,0 +1,61 @@
+Run started:2026-11-09 04:44:10.275926+00:00
+
+Test results:
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'super_secret_dev_key_123'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: .\main.py:9:13
+8	# CWE-798: Uso de credenciales codificadas en duro (Hardcoded Secret)
+9	SECRET_KEY = "super_secret_dev_key_123"
+10	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: .\main.py:32:14
+31	    # CWE-256: Almacenamiento de contraseñas en texto plano (Falta de Hashing)
+32	    query = f"INSERT INTO users (username, password, role) VALUES ('{user.username}', '{user.password}', 'user')"
+33	    try:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: .\main.py:49:14
+48	    # CWE-89: Inyección SQL en el proceso de autenticación
+49	    query = f"SELECT id, username, role FROM users WHERE username = '{user.username}' AND password = '{user.password}'"
+50	    cursor.execute(query)
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: .\main.py:67:14
+66	    
+67	    query = f"SELECT id, username, role FROM users WHERE id = {user_id}"
+68	    cursor.execute(query)
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 52
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 1
+		Medium: 3
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 3
+		Medium: 1
+		High: 0
+Files skipped (0):
