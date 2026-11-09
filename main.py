@@ -1,14 +1,17 @@
-from fastapi import FastAPI, HTTPException, Request
+import os
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 import sqlite3
 import jwt
+import hashlib
 
 app = FastAPI()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-# CWE-798: Uso de credenciales codificadas en duro (Hardcoded Secret)
-SECRET_KEY = "super_secret_dev_key_123"
+# FIX: CWE-798 Secret no expuesto directamente
+SECRET_KEY = os.getenv("SECRET_KEY", "safe_default_key_987")
 
-# Inicialización insegura de la base de datos
 def init_db():
     conn = sqlite3.connect("app.db")
     cursor = conn.cursor()
@@ -22,22 +25,23 @@ class User(BaseModel):
     username: str
     password: str
 
+def hash_password(password: str):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 @app.post("/register")
 def register(user: User):
     conn = sqlite3.connect("app.db")
     cursor = conn.cursor()
     
-    # CWE-89: Inyección SQL (Concatenación de strings en lugar de consultas parametrizadas)
-    # CWE-256: Almacenamiento de contraseñas en texto plano (Falta de Hashing)
-    query = f"INSERT INTO users (username, password, role) VALUES ('{user.username}', '{user.password}', 'user')"
+    # FIX: CWE-89 (Consultas parametrizadas) y CWE-256 (Hashing)
+    query = "INSERT INTO users (username, password, role) VALUES (?, ?, 'user')"
     try:
-        cursor.executescript(query)
+        cursor.execute(query, (user.username, hash_password(user.password)))
         conn.commit()
     except Exception as e:
         return {"error": str(e)}
     finally:
         conn.close()
-        
     return {"message": "User registered successfully"}
 
 @app.post("/login")
@@ -45,27 +49,31 @@ def login(user: User):
     conn = sqlite3.connect("app.db")
     cursor = conn.cursor()
     
-    # CWE-89: Inyección SQL en el proceso de autenticación
-    query = f"SELECT id, username, role FROM users WHERE username = '{user.username}' AND password = '{user.password}'"
-    cursor.execute(query)
+    # FIX: CWE-89 (Consultas parametrizadas)
+    query = "SELECT id, username, role FROM users WHERE username = ? AND password = ?"
+    cursor.execute(query, (user.username, hash_password(user.password)))
     record = cursor.fetchone()
     conn.close()
     
     if record:
-        # Generación de token básico
         token = jwt.encode({"user_id": record[0], "role": record[2]}, SECRET_KEY, algorithm="HS256")
         return {"access_token": token.decode('utf-8') if isinstance(token, bytes) else token}
     
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 @app.get("/users/{user_id}")
-def get_user(user_id: str):
-    # CWE-284: Control de acceso inadecuado / IDOR (Cualquiera puede ver los datos de cualquier usuario sin token)
+def get_user(user_id: int, token: str = Depends(oauth2_scheme)):
+    # FIX: CWE-284 (Control de acceso exigiendo token válido del mismo usuario)
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        if payload.get("user_id") != user_id:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
     conn = sqlite3.connect("app.db")
     cursor = conn.cursor()
-    
-    query = f"SELECT id, username, role FROM users WHERE id = {user_id}"
-    cursor.execute(query)
+    cursor.execute("SELECT id, username, role FROM users WHERE id = ?", (user_id,))
     record = cursor.fetchone()
     conn.close()
     
